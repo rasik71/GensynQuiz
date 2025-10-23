@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Result — Basic Gensyn Knowledge</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container center">
+    <div class="card result-card">
+      <h1 class="title">Your Result</h1>
+      <div id="scoreBox" class="score-box">
+        <!-- populated by JS -->
+      </div>
+
+      <div class="result-actions">
+        <button id="restart" class="btn btn-primary">Restart Quiz</button>
+        <button id="review" class="btn btn-ghost">Review Answers</button>
+      </div>
+
+      <button id="home" class="btn btn-link">Back to Home</button>
+    </div>
+  </main>
+
+  <script>
+    const scoreBox = document.getElementById('scoreBox');
+    const restart = document.getElementById('restart');
+    const review = document.getElementById('review');
+    const home = document.getElementById('home');
+
+    const questions = [
+      // same order as quiz.html; store only text + options + correctIndex for review
+      {
+        q: "What is the main goal of Gensyn?",
+        options: [
+          "Make AI models smaller",
+          "Decentralize AI compute power",
+          "Sell cloud servers",
+          "Build social media tools"
+        ],
+        correctIndex: 1
+      },
+      {
+        q: "Gensyn helps developers save money compared to AWS and other centralized clouds. How much cheaper can it be?",
+        options: [
+          "About 10% less",
+          "About 50% less",
+          "About 80% less",
+          "About the same"
+        ],
+        correctIndex: 2
+      },
+      {
+        q: "In Gensyn’s system, who can earn rewards by contributing computing power?",
+        options: [
+          "Only big companies",
+          "Everyone with idle GPUs or PCs",
+          "Only data scientists",
+          "Only Gensyn employees"
+        ],
+        correctIndex: 1
+      },
+      {
+        q: "Gensyn uses blockchain to ensure that AI training is:",
+        options: [
+          "Expensive and private",
+          "Centralized and hidden",
+          "Trustless and verifiable",
+          "Done only by one company"
+        ],
+        correctIndex: 2
+      },
+      {
+        q: "What’s one key advantage of Gensyn’s design?",
+        options: [
+          "It reduces internet speed",
+          "It relies only on AWS servers",
+          "It massively scales global AI compute by using idle hardware",
+          "It bans open-source models"
+        ],
+        correctIndex: 2
+      }
+    ];
+
+    function showScore() {
+      const finalScore = parseInt(localStorage.getItem('gensyn_quiz_score') || '0', 10);
+      const total = questions.length;
+      const pct = Math.round((finalScore / total) * 100);
+
+      let message = '';
+      if (pct === 100) message = "Perfect — you know Gensyn well!";
+      else if (pct >= 80) message = "Great job — you have strong knowledge.";
+      else if (pct >= 50) message = "Nice — a little more reading and you'll ace it.";
+      else message = "Thanks for trying — consider reading more about Gensyn's design.";
+
+      scoreBox.innerHTML = `
+        <div class="big-score">${finalScore} / ${total}</div>
+        <div class="pct">${pct}%</div>
+        <p class="message">${message}</p>
+      `;
+    }
+
+    restart.addEventListener('click', () => {
+      // clear stored state and start fresh
+      localStorage.removeItem('gensyn_quiz_score');
+      localStorage.removeItem('gensyn_quiz_qindex');
+      localStorage.removeItem('gensyn_quiz_selections');
+      window.location.href = 'index.html';
+    });
+
+    review.addEventListener('click', () => {
+      // show a quick inline review of each question & correct answer
+      const selections = JSON.parse(localStorage.getItem('gensyn_quiz_selections') || '[]');
+      const container = document.createElement('div');
+      container.className = 'review';
+
+      questions.forEach((item, i) => {
+        const sel = selections[i];
+        const correct = item.correctIndex;
+        const block = document.createElement('div');
+        block.className = 'review-item';
+        block.innerHTML = `
+          <div class="rev-q">${i + 1}. ${item.q}</div>
+          <div class="rev-a">Your answer: <strong>${sel !== undefined ? item.options[sel] : '<em>no answer</em>'}</strong></div>
+          <div class="rev-c">Correct answer: <strong>${item.options[correct]}</strong></div>
+        `;
+        container.appendChild(block);
+      });
+
+      // replace scoreBox content with review
+      scoreBox.style.display = 'none';
+      const card = document.querySelector('.result-card');
+      const existing = document.querySelector('.full-review');
+      if (existing) existing.remove();
+      const wrapper = document.createElement('div');
+      wrapper.className = 'full-review';
+      wrapper.appendChild(container);
+      card.appendChild(wrapper);
+    });
+
+    home.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    // initial render
+    showScore();
+  </script>
+</body>
+</html>

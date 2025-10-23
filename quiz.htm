@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz — Basic Gensyn Knowledge</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <div class="card">
+      <header class="quiz-header">
+        <div class="progress" id="progress">Question 1 / 5</div>
+        <button id="quit" class="btn btn-ghost">Quit</button>
+      </header>
+
+      <section id="questionArea" class="question-area">
+        <h2 id="questionText" class="question"></h2>
+        <form id="optionsForm" class="options-form" autocomplete="off">
+          <!-- options inserted here -->
+        </form>
+      </section>
+
+      <div class="nav">
+        <button id="prevBtn" class="btn btn-ghost" disabled>Previous</button>
+        <button id="nextBtn" class="btn btn-primary" disabled>Next</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    /* Quiz data (your provided questions) */
+    const questions = [
+      {
+        q: "What is the main goal of Gensyn?",
+        options: [
+          "Make AI models smaller",
+          "Decentralize AI compute power",
+          "Sell cloud servers",
+          "Build social media tools"
+        ],
+        correctIndex: 1
+      },
+      {
+        q: "Gensyn helps developers save money compared to AWS and other centralized clouds. How much cheaper can it be?",
+        options: [
+          "About 10% less",
+          "About 50% less",
+          "About 80% less",
+          "About the same"
+        ],
+        correctIndex: 2
+      },
+      {
+        q: "In Gensyn’s system, who can earn rewards by contributing computing power?",
+        options: [
+          "Only big companies",
+          "Everyone with idle GPUs or PCs",
+          "Only data scientists",
+          "Only Gensyn employees"
+        ],
+        correctIndex: 1
+      },
+      {
+        q: "Gensyn uses blockchain to ensure that AI training is:",
+        options: [
+          "Expensive and private",
+          "Centralized and hidden",
+          "Trustless and verifiable",
+          "Done only by one company"
+        ],
+        correctIndex: 2
+      },
+      {
+        q: "What’s one key advantage of Gensyn’s design?",
+        options: [
+          "It reduces internet speed",
+          "It relies only on AWS servers",
+          "It massively scales global AI compute by using idle hardware",
+          "It bans open-source models"
+        ],
+        correctIndex: 2
+      }
+    ];
+
+    // Elements
+    const questionText = document.getElementById('questionText');
+    const optionsForm = document.getElementById('optionsForm');
+    const progress = document.getElementById('progress');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const quitBtn = document.getElementById('quit');
+
+    // Load state from localStorage (or initialize)
+    let qIndex = parseInt(localStorage.getItem('gensyn_quiz_qindex') || '0', 10);
+    let score = parseInt(localStorage.getItem('gensyn_quiz_score') || '0', 10);
+
+    // keep track of user's selected answers in-memory for back navigation
+    const userSelections = JSON.parse(localStorage.getItem('gensyn_quiz_selections') || '[]');
+
+    function renderQuestion() {
+      const q = questions[qIndex];
+      questionText.textContent = q.q;
+      progress.textContent = `Question ${qIndex + 1} / ${questions.length}`;
+
+      // Build options
+      optionsForm.innerHTML = '';
+      q.options.forEach((opt, i) => {
+        const id = `opt${i}`;
+        const wrapper = document.createElement('label');
+        wrapper.className = 'option';
+        wrapper.innerHTML = `
+          <input type="radio" name="answer" id="${id}" value="${i}" />
+          <span class="opt-text">${opt}</span>
+        `;
+        optionsForm.appendChild(wrapper);
+      });
+
+      // Restore previous selection if exists
+      const prevSel = userSelections[qIndex];
+      if (prevSel !== undefined) {
+        const input = optionsForm.querySelector(`input[value="${prevSel}"]`);
+        if (input) input.checked = true;
+        nextBtn.disabled = false;
+      } else {
+        nextBtn.disabled = true;
+      }
+
+      prevBtn.disabled = qIndex === 0;
+    }
+
+    // When user picks an option
+    optionsForm.addEventListener('change', (e) => {
+      if (e.target.name === 'answer') {
+        nextBtn.disabled = false;
+      }
+    });
+
+    prevBtn.addEventListener('click', () => {
+      // go back one question (do not change score here)
+      if (qIndex > 0) {
+        qIndex--;
+        localStorage.setItem('gensyn_quiz_qindex', String(qIndex));
+        renderQuestion();
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      const checked = optionsForm.querySelector('input[name="answer"]:checked');
+      if (!checked) return;
+
+      const selected = parseInt(checked.value, 10);
+      // store selection
+      userSelections[qIndex] = selected;
+      localStorage.setItem('gensyn_quiz_selections', JSON.stringify(userSelections));
+
+      // Update score only when moving forward and if this selection wasn't already counted
+      // We will recalc score at the end to keep it simple and correct even with back/forward changes
+      // Move to next or finish
+      if (qIndex < questions.length - 1) {
+        qIndex++;
+        localStorage.setItem('gensyn_quiz_qindex', String(qIndex));
+        renderQuestion();
+      } else {
+        // finalize score: recalc
+        let finalScore = 0;
+        for (let i = 0; i < questions.length; i++) {
+          if (userSelections[i] === questions[i].correctIndex) finalScore++;
+        }
+        localStorage.setItem('gensyn_quiz_score', String(finalScore));
+        // Keep selections and index for result page to optionally display review
+        window.location.href = 'result.html';
+      }
+    });
+
+    quitBtn.addEventListener('click', () => {
+      // Clear and return to intro
+      if (confirm('Quit the quiz? Your current progress will be lost.')) {
+        localStorage.removeItem('gensyn_quiz_score');
+        localStorage.removeItem('gensyn_quiz_qindex');
+        localStorage.removeItem('gensyn_quiz_selections');
+        window.location.href = 'index.html';
+      }
+    });
+
+    // initialize
+    renderQuestion();
+  </script>
+</body>
+</html>
